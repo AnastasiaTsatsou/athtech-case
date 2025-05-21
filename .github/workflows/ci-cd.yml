@@ -56,6 +56,8 @@ jobs:
       
     - name: Start services for testing
       uses: hoverkraft-tech/compose-action@v2.0.1
+      with:
+          compose-file: docker-compose.yaml
         
     - name: Wait for services to be ready
       run: |
