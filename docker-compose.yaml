@@ -3,14 +3,17 @@ services:
     image: expense-tracker:latest
     build:
       context: .
-      dockerfile: app.Dockerfile
+      dockerfile: Dockerfile.app
     ports:
       - "8000:80"
     depends_on:
       db:
         condition: service_healthy
   db:
-    image: mariadb
+    image: expense-db:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.db
     restart: always
     environment:
       MARIADB_ROOT_PASSWORD: root
