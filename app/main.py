@@ -1,14 +1,25 @@
 import datetime
-from math import e
-from tkinter import NO
+import time
 from typing import Annotated, Optional
-from fastapi import FastAPI, Depends, HTTPException, Query
+from fastapi import FastAPI, Depends, HTTPException, Request, Response
 from enum import Enum
 from sqlmodel import Field, Session, SQLModel, create_engine, select
+from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
 
 # Database connection
 DATABASE_URL = "mysql+pymysql://root:root@db:3306/expensesdb"
 engine = create_engine(DATABASE_URL, echo=True)
+
+# Create metrics
+REQUEST_COUNT = Counter(
+    "http_requests_total", "Total HTTP Requests Count", ["method", "endpoint", "status"]
+)
+
+REQUEST_LATENCY = Histogram(
+    "http_request_duration_seconds", "HTTP Request Latency", ["method", "endpoint"]
+)
+
+DB_QUERY_COUNT = Counter("db_query_count_total", "Total Database Query Count")
 
 
 class CategoryEnum(str, Enum):
@@ -58,9 +69,41 @@ def on_startup():
     create_db_and_tables()
 
 
+@app.middleware("http")
+async def metrics_middleware(request: Request, call_next):
+    """Middleware to track request metrics."""
+    start_time = time.time()
+    response = await call_next(request)
+    latency = time.time() - start_time
+    REQUEST_LATENCY.labels(method=request.method, endpoint=request.url.path).observe(
+        latency
+    )
+    REQUEST_COUNT.labels(
+        method=request.method, endpoint=request.url.path, status=response.status_code
+    ).inc()
+
+    return response
+
+
+@app.middleware("http")
+async def db_metrics_middleware(request: Request, call_next):
+    if request.url.path.startswith("/expenses") or request.url.path.startswith(
+        "/categories"
+    ):
+        DB_QUERY_COUNT.inc()
+
+    response = await call_next(request)
+    return response
+
+
 @app.get("/")
 async def root():
     return {"message": "Hello World"}
+
+
+@app.get("/metrics")
+async def metrics():
+    return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 
 @app.get("/expenses/")
