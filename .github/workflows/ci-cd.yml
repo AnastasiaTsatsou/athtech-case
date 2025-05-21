@@ -55,8 +55,7 @@ jobs:
       run: docker network create expense-tracker-network || true
       
     - name: Start services for testing
-      run: |
-        docker-compose -f docker-compose.yaml up -d
+      uses: hoverkraft-tech/compose-action@v2.0.1
         
     - name: Wait for services to be ready
       run: |
