@@ -59,16 +59,6 @@ jobs:
       with:
           compose-file: docker-compose.yaml
         
-    - name: Wait for services to be ready
-      run: |
-        echo "Waiting for services to be ready..."
-        sleep 20
-        
     - name: Run tests
       run: |
         pytest --maxfail=1 --disable-warnings tests/test_app.py
-        
-    - name: Cleanup test services
-      if: always()
-      run: |
-        docker-compose -f docker-compose.yaml down
