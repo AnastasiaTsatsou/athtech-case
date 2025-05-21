@@ -13,6 +13,8 @@ services:
     restart: always
     environment:
       MARIADB_ROOT_PASSWORD: root
+    volumes:
+      - ./db_init:/docker-entrypoint-initdb.d
   adminer:
     image: adminer
     restart: always
