@@ -64,8 +64,18 @@ async def root():
 
 
 @app.get("/expenses/")
-def read_expenses(session: SessionDep) -> list[Expense]:
-    expenses = session.exec(select(Expense)).all()
+def read_expenses(
+    session: SessionDep, category: CategoryEnum | None = None
+) -> list[Expense]:
+    if category:
+        if category not in CategoryEnum:
+            raise HTTPException(status_code=400, detail="Invalid category")
+        else:
+            expenses = session.exec(
+                select(Expense).where(Expense.category == category)
+            ).all()
+    else:
+        expenses = session.exec(select(Expense)).all()
     return expenses
 
 
