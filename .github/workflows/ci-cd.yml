@@ -33,3 +33,32 @@ jobs:
         push: false
         load: true
         tags: expense-db:latest
+
+  test:
+    needs: build
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.9"
+    
+    - name: Install test dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r ./tests/requirements.txt
+    
+    - name: Create network
+      run: docker network create expense-tracker-network || true
+      
+    - name: Start services for testing
+      uses: hoverkraft-tech/compose-action@v2.0.1
+      with:
+          compose-file: docker-compose.yaml
+        
+    - name: Run tests
+      run: |
+        pytest --maxfail=1 --disable-warnings tests/test_app.py
